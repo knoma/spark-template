@@ -1,15 +1,25 @@
 plugins {
     id 'java'
+    id 'com.github.johnrengelman.shadow' version '5.1.0'
 }
 
 group 'template.spark'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'scala'
-apply plugin: 'idea'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
+
+configurations {
+    provided
+}
+
+sourceSets {
+    main {
+        compileClasspath += configurations.provided
+    }
+}
 
 repositories {
     jcenter()
@@ -31,3 +41,21 @@ task run(type: JavaExec, dependsOn: classes) {
     classpath configurations.runtime
 }
 
+jar {
+    classifier = 'all'
+    manifest {
+        attributes 'Implementation-Title': title,
+                'Implementation-Version': version,
+                'Main-Class': mainClassFile
+    }
+    include{sourceSets.main.output.classesDirs}
+    zip64 true
+}
+
+shadowJar {
+    classifier = 'shadow'
+    append 'reference.conf'
+    dependencies {
+
+    }
+}
