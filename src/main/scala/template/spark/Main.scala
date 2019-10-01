@@ -1,8 +1,10 @@
 package template.spark
 
+import com.datastax.driver.core.Session
+import com.datastax.spark.connector._
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions._
 import org.apache.log4j.{Level, LogManager, Logger}
+import com.datastax.spark.connector.cql.CassandraConnector
 
 
 final case class Person(firstName: String, lastName: String,
@@ -28,19 +30,24 @@ object Main {
     val version = spark.version
     println("SPARK VERSION = " + version)
 
-    val sumHundred = spark.range(1, 101).reduce(_ + _)
-    println(f"Sum 1 to 100 = $sumHundred")
+    val sc = spark.sparkContext
 
-    println("Reading from csv file: people-example.csv")
-    val persons = spark.read
-      .option("header", true)
-      .option("inferSchema", true)
-      .option("mode", "DROPMALFORMED")
-      .csv("people-example.csv").as[Person]
-    persons.show(2)
-    val averageAge = persons.agg(avg("age"))
-      .first.get(0).asInstanceOf[Double]
-    println(f"Average Age: $averageAge%.2f")
+    val rows = sc.cassandraTable("cycling", "cyclist_name")
+      .filter(r => r.getString("firstname")=="Steven")
+    println(rows.count())
+    println(rows.partitions.size)
+
+    val connector = CassandraConnector.apply(sc.getConf)
+
+    rows.foreachPartition(partition => {
+      val session: Session = connector.openSession()
+      partition.foreach{elem =>
+        val delete = s"DELETE FROM cycling.cyclist_name where id=${elem.getString("id")};"
+        println(delete)
+        session.execute(delete)
+      }
+      session.close()
+    })
 
     spark.close()
   }
