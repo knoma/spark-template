@@ -1,0 +1,33 @@
+plugins {
+    id 'java'
+}
+
+group 'template.spark'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'scala'
+apply plugin: 'idea'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    compile "org.scala-lang:scala-library:$scalaVersion"
+    compile "org.scala-lang:scala-reflect:$scalaVersion"
+    compile "org.scala-lang:scala-compiler:$scalaVersion"
+
+    compile "org.apache.spark:spark-core_$scalaMajorVersion:$sparkVersion"
+    compile "org.apache.spark:spark-sql_$scalaMajorVersion:$sparkVersion"
+}
+
+
+task run(type: JavaExec, dependsOn: classes) {
+    main = mainClassFile
+    classpath sourceSets.main.runtimeClasspath
+    classpath configurations.runtime
+}
+
